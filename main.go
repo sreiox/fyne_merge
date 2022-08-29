@@ -129,7 +129,6 @@ func DownloadFiles() {
 
 		fileSaved(writer, w)
 	}, w)
-	clearContent()
 }
 
 func fileSaved(f fyne.URIWriteCloser, w fyne.Window) {
@@ -151,6 +150,7 @@ func fileSaved(f fyne.URIWriteCloser, w fyne.Window) {
 	}
 	log.Println("保存路径为：", f.URI())
 	dialog.ShowInformation("保存成功", "文件保存路径："+f.URI().String(), w)
+	clearContent()
 }
 
 func clearFile() {
