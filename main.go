@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"io"
 	"log"
+	"main/zh"
 	"os"
 	"strings"
 )
@@ -25,17 +26,18 @@ var content map[string]int
 
 func main() {
 	a := app.New()
+	a.Settings().SetTheme(&zh.MyTheme{})
 	w = a.NewWindow("设备号文件合并并去重")
 
 	showMessage := widget.NewLabel(showInfo())
-	openFd := widget.NewButton("1.open file", func() {
+	openFd := widget.NewButton("1.选择文件", func() {
 		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil {
 				dialog.ShowError(err, w)
 				return
 			}
 			if reader == nil {
-				log.Println("Cancelled")
+				log.Println("取消了...")
 				return
 			}
 			fileList = append(fileList, reader.URI().Path())
@@ -44,13 +46,14 @@ func main() {
 		fd.SetFilter(storage.NewExtensionFileFilter([]string{".txt"}))
 		fd.Show()
 	})
-	mergeButton := widget.NewButton("2.merge File", mergeFiles)
-	DownloadButton := widget.NewButton("3.Download file", DownloadFiles)
+	mergeButton := widget.NewButton("2.合并文件", mergeFiles)
+	DownloadButton := widget.NewButton("3.下载文件", DownloadFiles)
 
 	w.SetContent(container.NewVBox(
 		showMessage,
-		widget.NewButton("clear files", func() {
-			fileList = []string{}
+		widget.NewButton("清空文件", func() {
+			clearFile()
+			clearContent()
 			showMessage.SetText(showInfo())
 		}),
 		openFd,
@@ -65,11 +68,11 @@ func main() {
 
 func showInfo() string {
 	if len(fileList) == 0 {
-		return "Please select the files you need to merge:"
+		return "请选择你需要合并的文件:"
 	}
 
 	if len(fileList) > 0 {
-		t := "The files you have selected are as follows:\n"
+		t := "所选择的文件如下:\n"
 		t += strings.Join(fileList, "\n")
 		return t
 	}
@@ -84,7 +87,7 @@ func mergeFiles() {
 	for _, filePath := range fileList {
 		f, err := os.Open(filePath)
 		if err != nil {
-			dialog.ShowError(errors.New("open file["+filePath+"] err \n "+err.Error()), w)
+			dialog.ShowError(errors.New("打开文件["+filePath+"]失败: \n "+err.Error()), w)
 			return
 		}
 		//将文件加载到内存中
@@ -109,8 +112,8 @@ func mergeFiles() {
 
 	}
 	//fmt.Println(num, content)
-	msg := fmt.Sprintf("Effective number:%d \n Number of repetitions:%d", len(content), num)
-	dialog.ShowInformation("result", msg, w)
+	msg := fmt.Sprintf("有效数量:%d \n 重复数量:%d", len(content), num)
+	dialog.ShowInformation("合并结果", msg, w)
 }
 
 func DownloadFiles() {
@@ -120,12 +123,13 @@ func DownloadFiles() {
 			return
 		}
 		if writer == nil {
-			log.Println("Cancelled")
+			log.Println("取消")
 			return
 		}
 
 		fileSaved(writer, w)
 	}, w)
+	clearContent()
 }
 
 func fileSaved(f fyne.URIWriteCloser, w fyne.Window) {
@@ -145,5 +149,14 @@ func fileSaved(f fyne.URIWriteCloser, w fyne.Window) {
 	if err != nil {
 		dialog.ShowError(err, w)
 	}
-	log.Println("Saved to...", f.URI())
+	log.Println("保存路径为：", f.URI())
+	dialog.ShowInformation("保存成功", "文件保存路径："+f.URI().String(), w)
+}
+
+func clearFile() {
+	fileList = []string{} // 清空选择文件
+}
+
+func clearContent() {
+	content = make(map[string]int) // 清空内容
 }
